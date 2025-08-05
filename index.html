@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="HAVE">
+  <meta name="keywords" content="Ambiguities, Multi-modality, Generation-Verification">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HAVE</title>
+
+  <style> 
+    .div-a{ float:left;width:49%;border:1px solid #000} 
+    .div-b{ float:left;width:49%;border:1px solid rgb(170, 13, 13)} 
+  </style> 
+  <style>
+    .img_columns {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 50vh; /* Adjust this to fit your needs */
+    }
+    .img-div-a, .img-div-b {
+      flex: 0 0 49%;
+      border: 1px solid;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .img-div-a {
+      border-color: #fff;
+      height: 30vh;
+    }
+    .img-div-b {
+      border-color: #fff;
+      height: 50vh;
+    }
+    .highlight {
+      color: red;
+    }
+  </style>
+  </head> 
+
+  <style>
+    .video-container {
+      display: flex;
+      justify-content: space-between;
+    }
+    .video-container video {
+      width: 48%; /* Adjust width as needed */
+      height: auto;
+    }
+  </style>
+
+  <style>
+    .video-container-three {
+      display: flex;
+      justify-content: space-between;
+    }
+    .video-container-three video {
+      width: 33%; /* Adjust width as needed */
+      height: auto;
+    }
+  </style>
+
+  <style>
+    .small_video-container {
+      display: flex;
+      justify-content: space-between;
+    }
+    .small_video-container video {
+      width: 28%; /* Adjust width as needed */
+      height: auto;
+    }
+  </style>
+
+  <style>
+    .swiper-slide img {
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+    }
+  </style>
+  <style>
+    .slide-content {
+      text-align: center;
+    }
+  
+    .slide-content img {
+      height: 300px;         /* Fixed height for all images */
+      width: 100%;           /* Full width of slide */
+      object-fit: contain;   /* Preserve aspect ratio and fit inside the box */
+      display: block;
+      margin: 0 auto;        /* Center the image horizontally */
+    }
+  
+    .caption {
+      margin-bottom: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      color: #333;
+    }
+  </style>
+
+  <style>
+    .toggle-content {
+        display: none;
+        margin-top: 10px;
+    }
+
+    input[type="checkbox"] {
+        display: none;
+    }
+
+    .toggle-label {
+        cursor: pointer;
+        color: rgb(111, 17, 17);
+        text-decoration: bold;
+        display: flex;
+        align-items: center;
+    }
+
+    .toggle-label::before {
+        content: '▶';
+        display: inline-block;
+        margin-right: 5px;
+        transition: transform 0.3s ease;
+    }
+
+    input[type="checkbox"]:checked + .toggle-label::before {
+        transform: rotate(90deg);
+    }
+
+    input[type="checkbox"]:checked + .toggle-label + .toggle-content {
+        display: block;
+    }
+  </style>
+
+  <style>
+    ul.custom-list {
+      list-style-type: square;
+    }
+  </style>
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYVRSFMDRL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-PYVRSFMDRL');
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="./static/images/favicon.svg">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+</nav>
+
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">
+            Learn from What We HAVE: History-Aware VErifier that Reasons about Past Interactions Online
+          </h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              Anonymous Authors
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Abstract. -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            We introduce a novel <b>History-Aware VErifier (HAVE)</b> to disambiguate uncertain scenarios online by leveraging past interactions. Robots frequently encounter visually ambiguous objects whose manipulation outcomes remain uncertain until physically interacted with. While generative models alone could theoretically adapt to such ambiguity, in practice they obtain suboptimal performance in ambiguous cases, even when conditioned on action history.  
+          </p>
+          <p>
+            To address this, we propose explicitly decoupling action generation from verification: we use an unconditional diffusion-based generator to propose multiple candidate actions and employ our history-aware verifier to select the most promising action by reasoning about past interactions.
+          </p>
+          <p>
+            Through theoretical analysis, we demonstrate that employing a verifier significantly improves expected action quality. Empirical evaluations and analysis across multiple simulated and real-world environments including articulated objects, multi-modal doors, and uneven object pick-up confirm the effectiveness of our method and improvements over baselines.
+          </p>
+        </div>
+      </div>
+    </div>
+</section>
+<!--/ Abstract. -->
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <h2 class="title is-3" style="margin-top: 40px;">Real World Demos</h2>
+    </div>
+    
+    <h2 class="subtitle has-text-centered">
+      We demonstrate the performance of HAVE on a real world ambiguous door: 
+    </h2>
+    <h2 class="subtitle has-text-centered", style="margin-top: -20px;">
+      HAVE can <b>explore possible open modes efficiently</b>, <b>avoiding repeating failure actions</b>.
+    </h2>
+    
+    <div class="video-container-three">
+      <video id="matting-video" controls playsinline height="100%">
+        <source src="./static/videos/pull_left_1step.mp4"
+                type="video/mp4">
+      </video>
+      <video id="matting-video" controls playsinline height="100%">
+        <source src="./static/videos/pull_left_2step.mp4"
+                type="video/mp4">
+      </video>
+      <video id="matting-video" controls playsinline height="100%">
+        <source src="./static/videos/pull_right_2step.mp4"
+                type="video/mp4">
+      </video>
+    </div>
+    
+    <div class="video-container-three">
+      <video id="matting-video" controls playsinline height="100%">
+        <source src="./static/videos/pull_right_3step.mp4"
+                type="video/mp4">
+      </video>
+      <video id="matting-video" controls playsinline height="100%">
+        <source src="./static/videos/push_left_1step.mp4"
+                type="video/mp4">
+      </video>
+      <video id="matting-video" controls playsinline height="100%">
+        <source src="./static/videos/push_right_1step.mp4"
+                type="video/mp4">
+      </video>
+    </div>
+    
+    <h2 class="subtitle has-text-left", style="margin-top: 30px;">
+      <b>Example 1: </b>
+    </h2>
+    <h2 class="subtitle has-text-left", style="margin-top: -10px;">
+      In a pull-left door, the agent succeeds after 3 steps: the verifier suppresses the failed pull-right mode after step 1, and both generator and verifier recognize the slight opening after step 2 to guide the correct action.
+    </h2>
+    <img id="teaser" src="./static/images/real_world_plll.png"
+                  type="image/jpg">
+    </img>
+    <h2 class="subtitle has-text-left", style="margin-top: 30px;">
+      <b>Example 2: </b>
+    </h2>
+    <h2 class="subtitle has-text-left", style="margin-top: -10px;">
+      In a pull-right door, the agent fails with push-left at step 1, and with the verifier consistently suppressing this failure mode, they predict the correct action in the second step despite generator ambiguity.</h2>
+    <img id="teaser" src="./static/images/real_world_pllr.png"
+                  type="image/jpg">
+    </img>
+  </div>
+</section>
+
+
+<!-- Theoretical Motivation -->
+
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <h2 class="title is-3" style="margin-top:60px;">Theoretical Motivation</h2>
+    </div>
+
+    <div class="hero-body has-text-left">
+
+      <!-- === Discrete-setting motivation and two results === -->
+      <p>
+        <span style="color:#d9534f; font-weight:bold;">
+          Setting&nbsp;: Discrete Reward.
+        </span>
+        An action is either <em>good</em> (reward = 1) or <em>bad</em> (reward = 0).
+        <!-- <a id="setting-toggle" class="has-text-weight-semibold has-text-link">
+          <em>(click for detailed definitions)</em>
+        </a> -->
+      </p>
+
+      <ul style="margin-left:1.5rem; list-style-type:disc;">
+        <li>
+          The <b>GENERATOR</b> proposes action candidates
+          \( a \sim \pi_G \), with accuracy
+          \(p_G = P\bigl(R_{gt}(a)=1\bigr)\).
+        </li>
+        <li>
+          The <b>VERIFIER</b> \(V(a)\in\{0,1\}\) predicts whether an
+          action is good with accuracy
+          \(p_V = P\bigl(V(a)=R_{gt}(a)\bigr)\).
+        </li>
+      </ul>
+
+      <p>
+        We sample <em>N</em> independent candidates from the generator, and execute the candidate with the highest verifier score
+      </p>
+      <p>(ties—and the all-zero case—are resolved arbitrarily).</p>
+
+      <br>
+      <p><b>Question:</b>
+        <b>Does this “pick-best-by-verifier’’ rule improve the expected reward
+        over picking a single random action?</b>
+      </p>
+
+      <br>
+
+      <p>
+        <span style="color:#6f0b07; font-weight:bold;">Theorem&nbsp;A (Independent Case).</span>
+        If the verifier’s overall accuracy satisfies \(p_V>0.5\) and
+        \(N\ge2\), then selecting the top-scoring candidate increases the
+        expected reward compared with using one generator sample.
+        <!-- <i>(See Sec.&nbsp;4.2 & App.&nbsp;A.1 for details.)</i> -->
+        <a id="aproof-toggle" class="has-text-weight-semibold has-text-link">
+          <em>(click to show proof)</em>
+        </a>
+      </p>
+      <div id="aproof-container" class="is-hidden" style="margin-top:1rem;">
+        <embed src="./static/proofs/theory_A.pdf"
+               width="925" height="375" type="application/pdf">
+      </div>
+
+      <br>
+
+      <p>
+        <span style="color:#6f0b07; font-weight:bold;">Theorem&nbsp;A′ (General Case).</span>
+        Let \(p_{V1}\) be the verifier’s true-positive rate (good→1) and
+        \(p_{V0}\) its true-negative rate (bad→0).
+        If \(p_{V1}+p_{V0}>1\) and \(N\ge2\), the same selection rule still
+        improves expected reward.  
+        <a id="aprimeproof-toggle" class="has-text-weight-semibold has-text-link">
+          <em>(click to show proof)</em>
+        </a>
+      </p>
+
+      <!-- Hidden proof container -->
+      <div id="aprimeproof-container" class="is-hidden" style="margin-top:1rem;">
+        <embed src="./static/proofs/theory_Ap.pdf"
+               width="925" height="375" type="application/pdf">
+      </div>
+
+      <br>
+
+      <p>See <b>Appendix A</b> for <i>Numerical Simulations</i>, and extension to <i>Continuous Reward</i>; </p>
+      <p>See <b>Section 4.1</b> for <i>Generation-Verification Gap</i></p>
+
+    </div>
+  </div>
+</section>
+
+<script>
+  document.getElementById('aproof-toggle').addEventListener('click', function (e) {
+    e.preventDefault();                             // keep the page from jumping
+    document.getElementById('aproof-container')
+            .classList.toggle('is-hidden');         // Bulma’s helper class
+  });
+</script>
+<script>
+  document.getElementById('aprimeproof-toggle').addEventListener('click', function (e) {
+    e.preventDefault();                             // keep the page from jumping
+    document.getElementById('aprimeproof-container')
+            .classList.toggle('is-hidden');         // Bulma’s helper class
+  });
+</script>
+
+
+<!-- Theoretical Motivation -->
+
+
+<!--Quantitative Results-->
+<section class="hero teaser">
+  <div class="columns is-centered has-text-centered">
+    <h2 class="title is-3", style="margin-top: 60px;">Quantitative Results</h2>
+  </div>
+
+  <!-- Swiper CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/swiper/swiper-bundle.min.css"
+  />
+
+  <!-- Swiper HTML Block -->
+  <div class="swiper mySwiper" style="width: 800px; margin: 20px auto;">
+    <div class="swiper-wrapper">
+      <div class="swiper-slide">
+        <div class="slide-content">
+          <p class="subtitle has-text-centered">Simulation: Ambiguous Door</p>
+          <img src="./static/images/door_performance.png" alt="Slide 1" />
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="slide-content">
+          <p class="subtitle has-text-centered">Real World: Ambiguous Door</p>
+          <img src="./static/images/real_world_door.png" alt="Slide 2" />
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="slide-content">
+          <p class="subtitle has-text-centered">Articulated Objects (Full Set)</p>
+          <img src="./static/images/articulated_fullset.png" alt="Slide 3" />
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="slide-content">
+          <p class="subtitle has-text-centered">Articulated Objects (Held-out)</p>
+          <img src="./static/images/articulated_heldout.png" alt="Slide 4" />
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="slide-content">
+          <p class="subtitle has-text-centered">Uneven Object Pick-up</p>
+          <img src="./static/images/uneven_object.png" alt="Slide 5" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Optional navigation and pagination -->
+    <div class="swiper-pagination"></div>
+    <div class="swiper-button-prev"></div>
+    <div class="swiper-button-next"></div>
+  </div>
+
+  <!-- Swiper JS -->
+  <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+
+  <!-- Swiper Initialization -->
+  <script>
+    var swiper = new Swiper(".mySwiper", {
+      loop: true,
+      autoplay: {
+        delay: 3000,
+        disableOnInteraction: false,
+      },
+      pagination: {
+        el: ".swiper-pagination",
+        clickable: true,
+      },
+      navigation: {
+        nextEl: ".swiper-button-next",
+        prevEl: ".swiper-button-prev",
+      },
+    });
+  </script>
+
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <h2 class="subtitle has-text-centered" onclick="toggleLegend()" style="cursor: pointer;">
+        ▶ Legend for Articulated Objects
+      </h2>
+      <img id="legend" src="./static/images/legend.png" width="800" style="display: none;" alt="Legend">
+    </div>
+  </div>
+
+  <script>
+    function toggleLegend() {
+      const img = document.getElementById("legend");
+      img.style.display = img.style.display === "none" ? "block" : "none";
+    }
+  </script>
+
+
+</section>
+<!--Quantitative Results-->
+
+
+<!--Analysis-->
+<section class="hero teaser">
+  <div class="columns is-centered has-text-centered">
+    <h2 class="title is-3", style="margin-top: 60px;">Analysis</h2>
+  </div>
+
+  <!-- Swiper CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/swiper/swiper-bundle.min.css"
+  />
+
+  <!-- Swiper HTML Block -->
+  <div class="swiper mySwiper" style="width: 800px; margin: 20px auto;">
+    <div class="swiper-wrapper">
+      <div class="swiper-slide">
+        <div class="slide-content">
+          <p class="subtitle has-text-centered">Performance with Different Sample Count</p>
+          <p class="caption"><b>Time and Accuracy vs Number of Samples</b>: On the left, we plot the time used for generator and verifier w.r.t the number of generated samples; On the right, we plot the  failure rate w.r.t sample count, comparing HAVE with an oracle verifier (which always selects the best sample from a given batch).</p>
+          <img src="./static/images/analysis/sample_cnt.png" alt="Slide 1" />
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="slide-content">
+          <p class="subtitle has-text-centered">Robustness to Noisy Flow</p>
+          <p class="caption"><b>Robustness to Noisy Flow:</b> HAVE outperforms a vanilla transformer baseline under noisy observation flow, demonstrating improved robustness across all articulated object environments.</p>
+          <img src="./static/images/analysis/transformer.png" alt="Slide 2" />
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="slide-content">
+          <p class="subtitle has-text-centered">Performance with History Length</p>
+          <p class="caption"><b>History Length Analysis</b>: Increasing history length from 1 to 5 steps significantly improves verifier performance, while longer histories offer diminishing improvements due to redundancy and potential instability.</p>
+          <img src="./static/images/analysis/history_len.png" alt="Slide 6" />
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="slide-content">
+          <p class="subtitle has-text-centered">Learning from Failure History (Articulated)</p>
+          <p class="caption"><b>Failure History Analysis</b>: Actions matching failed modes receive lower verifier scores, leading to nearly 100% of top-selected actions avoiding repeated failures, demonstrating HAVE’s ability to learn from failure histories.</p>
+          <img src="./static/images/analysis/failure_articulated.png" alt="Slide 2" />
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="slide-content">
+          <p class="subtitle has-text-centered">Learning from Success History (Articulated)</p>
+          <p class="caption has-text-left"><b>Success History Analysis</b>: Given a successful history, the verifier accurately identifies better grasp points and directions under severe occlusion, demonstrating its ability to generalize from past successes even with large viewpoint changes.</p>
+          <img src="./static/images/analysis/success_history.png" alt="Slide 4" />
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="slide-content">
+          <p class="subtitle has-text-centered">Learning from Failure History (Uneven)</p>
+          <p class="caption has-text-left"><b>Failure History (Uneven Objects)</b>: HAVE selects actions within the theoretical center of mass range at each step, converging to the ground truth with fewer attempts, while the generator baseline fails to leverage informative failure cues.</p>
+          <img src="./static/images/analysis/failure_uneven.png" alt="Slide 5" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Optional navigation and pagination -->
+    <div class="swiper-pagination"></div>
+    <div class="swiper-button-prev"></div>
+    <div class="swiper-button-next"></div>
+  </div>
+
+  <!-- Swiper JS -->
+  <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+
+  <!-- Swiper Initialization -->
+  <script>
+    var swiper = new Swiper(".mySwiper", {
+      loop: true,
+      autoplay: {
+        delay: 3000,
+        disableOnInteraction: false,
+      },
+      pagination: {
+        el: ".swiper-pagination",
+        clickable: true,
+      },
+      navigation: {
+        nextEl: ".swiper-button-next",
+        prevEl: ".swiper-button-prev",
+      },
+    });
+  </script>
+</section>
+<!--Quantitative Results-->
+
+
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <h2 class="title is-3", style="margin-top: 60px;">Model Architecture</h2>
+    </div>
+    <div class="hero-body">
+      <h2 class="subtitle has-text-centered">
+        HAVE scores action candidates by encoding past actions and results with PointNet++ and attention.
+      </h2>
+      <img id="teaser" src="./static/images/architecture.png"
+                type="image/jpg">
+      </img>
+    </div>
+  </div>
+</section>
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+      <!-- <a class="icon-link"
+         href="./static/videos/nerfies_paper.pdf">
+        <i class="fas fa-file-pdf"></i>
+      </a> -->
+      <a class="icon-link" class="external-link" disabled>
+        <i class="fab fa-github"></i>
+      </a>
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            This website is licensed under a <a rel="license"
+                                                href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
