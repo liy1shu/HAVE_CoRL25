@@ -1,0 +1,5 @@
+name: multimodal_door_diffuser_pndit
+learning_rate: 1e-4
+epochs: 100
+batch_size: 32
+eval_interval: 1

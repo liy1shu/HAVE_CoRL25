@@ -1,0 +1,3 @@
+[submodule "src/have/utils/DELTA"]
+	path = src/have/utils/DELTA
+	url = git@github.com:snap-research/DELTA_densetrack3d.git

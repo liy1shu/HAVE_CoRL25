@@ -1,0 +1,17 @@
+name: haverifier
+
+d_model: 128
+nhead: 4
+num_layers: 4
+dim_feedforward: 256
+max_len: 200
+pn_bsz: 8
+
+pretrained_path: null
+
+
+# Smaller model size
+# d_model=64, nhead=2, num_layers=2, dim_feedforward=256, max_len=200
+
+# Bigger model size
+# d_model=256, nhead=8, num_layers=6, dim_feedforward=512, max_len=200

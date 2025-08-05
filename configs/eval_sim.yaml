@@ -1,0 +1,47 @@
+mode: sim
+
+# This is somewhat arbitrary.
+job_type: ${mode}_${dataset.name}_${generator.name}_${verifier.name}
+
+defaults:
+  # Each of these have their own configuration parameters.
+  - dataset: uneven_object # [articulated, articulated_heldout, multimodal_door, uneven_object]
+  - generator: diffuser_pndit 
+  - verifier: haverifier
+
+  # A set of inference settings for the model. Note that these may be different
+  # from / or a subset of the training settings. This is that we don't have to
+  # provide, like, a learning rater or something to eval.
+  - inference: ${dataset}_${generator}_${verifier}
+
+  # Simple shared imports.
+  - _logging
+
+  # Override.
+  - _self_
+
+seed: 42
+gui: False
+
+score_filter: True
+tracking: True # Whether use tracking or use ground truth observation flow from simulation
+sample_cnt: 30
+oracle_score: False
+oracle_sampler: False
+repeat_time: 5 # To reduce variance
+
+max_step: 30
+
+resources:
+  num_workers: 30
+  n_proc_per_worker: 2
+  gpus:
+    - 0
+
+wandb:
+  # The group ***should*** be the same as the training group (so it can be bundled)
+  # nicely in the UI. But you might have a one-off eval or something.
+  group: ???
+
+
+metric_output_dir: './logs'
