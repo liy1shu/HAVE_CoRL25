@@ -1,0 +1,30 @@
+mode: train
+
+# This is somewhat arbitrary.
+job_type: ${mode}_trajectory_${model.name}_using_uneven_object
+
+defaults:
+  # Each of these have their own configuration parameters.
+  - dataset: unevenobject_toy
+  - model: diffuser_hispndit # diffuser_pndit   # Or choose any other model that exists in the configs/model directory
+
+  # We assume a different training config for each dataset/model pair.
+  - training: trajectory_${model} # the same with trajectory_{model} when using unevenobject dataset
+
+  # Simple shared imports.
+  - _logging
+
+  # Override.
+  - _self_
+
+seed: 42
+
+resources:
+  num_workers: 30
+  n_proc_per_worker: 2
+  gpus:
+    - 0
+
+wandb:
+  # Assume no group provided, we will create a default one.
+  group: pndit

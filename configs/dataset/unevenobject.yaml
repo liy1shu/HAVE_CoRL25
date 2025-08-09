@@ -1,0 +1,11 @@
+name: unevenobject
+data_dir: ${oc.env:HOME}/datasets/unevenobject
+
+dataset_type: "uneven-object"
+special_req: "torque"
+mask_input_channel: True
+randomize_camera: False
+randomize_size: False
+augmentation: False
+seed: 42
+n_points: 1200

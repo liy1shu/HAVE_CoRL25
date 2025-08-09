@@ -1,0 +1,15 @@
+/records
+/test
+/rpad
+/demo
+/logs
+__pycache__/
+/assets-full
+/wandb
+
+**/__pycache__/
+debug*
+**/wandb/
+
+**/0425toy/
+requirements.txt

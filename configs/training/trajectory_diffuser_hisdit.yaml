@@ -1,0 +1,17 @@
+name: trajectory_diffuser_hisdit
+lr: 1e-4
+lr_warmup_steps: 100
+batch_size: 128
+epochs: 1000
+train_sample_number : None # To be filled in train.py
+check_val_every_n_epoch: 10
+trajectory_len: 1
+# history_len: 1
+mode: delta
+wta: True
+wta_trial_times: 20
+
+# lr_warmup_steps: 5
+# batch_size: 1
+# epochs: 5000  # For toy
+# train_sample_number : 2  # For toy
