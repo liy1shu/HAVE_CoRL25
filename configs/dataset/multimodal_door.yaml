@@ -1,0 +1,11 @@
+name: multimodal_door
+data_dir: ${oc.env:HOME}/datasets/failure_history_door
+toy_dataset_path: ${YOUR PROJECT PATH}/configs/dataset/multimodal_door.json
+
+lr: 1e-3
+mask_input_channel: True
+randomize_camera: True
+randomize_size: False
+augmentation: False
+seed: 42
+n_points: 1200
