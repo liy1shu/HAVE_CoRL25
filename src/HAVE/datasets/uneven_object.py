@@ -12,7 +12,6 @@ from flowbothd.datasets.uneven_object_dataset_pyg import (
 
 
 # Create UnevenObject datamodule
-class UnevenObjectDataModule(L.LightningDataModule):
     def __init__(
         self,
         root,
@@ -49,7 +48,7 @@ class UnevenObjectDataModule(L.LightningDataModule):
         self.train_dset = CachedByKeyDataset(
             dset_cls=self.dataset_cls,
             dset_kwargs=dict(
-                root=os.path.join(root, "raw/train"),
+                root=os.path.join(root, "raw/toy"),
                 split="umpnet-train-train"
                 if toy_dataset is None
                 else toy_dataset["train-train"],
@@ -82,7 +81,7 @@ class UnevenObjectDataModule(L.LightningDataModule):
         self.train_val_dset = CachedByKeyDataset(
             dset_cls=self.dataset_cls,
             dset_kwargs=dict(
-                root=os.path.join(root, "raw/train"),
+                root=os.path.join(root, "raw/toy"),
                 split="umpnet-train-train"
                 if toy_dataset is None
                 else toy_dataset["train-train"],
@@ -114,7 +113,7 @@ class UnevenObjectDataModule(L.LightningDataModule):
         self.val_dset = CachedByKeyDataset(
             dset_cls=self.dataset_cls,
             dset_kwargs=dict(
-                root=os.path.join(root, "raw/val"),
+                root=os.path.join(root, "raw/toy"),
                 split="umpnet-train-test"
                 if toy_dataset is None
                 else toy_dataset["train-test"],
@@ -146,7 +145,7 @@ class UnevenObjectDataModule(L.LightningDataModule):
         self.unseen_dset = CachedByKeyDataset(
             dset_cls=self.dataset_cls,
             dset_kwargs=dict(
-                root=os.path.join(root, "raw/test"),
+                root=os.path.join(root, "raw/toy"),
                 split="umpnet-test" if toy_dataset is None else toy_dataset["test"],
                 randomize_camera=randomize_camera,
                 randomize_size=randomize_size,
