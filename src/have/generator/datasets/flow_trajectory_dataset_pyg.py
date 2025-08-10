@@ -4,7 +4,7 @@ import rpad.partnet_mobility_utils.dataset as pmd
 import torch
 import torch_geometric.data as tgd
 
-from failure_recovery.datasets.flow_trajectory_dataset import (
+from have.generator.datasets.flow_trajectory_dataset import (
     FlowTrajectoryDataset,
 )
 

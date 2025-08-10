@@ -11,9 +11,9 @@ import pickle as pkl
 from tqdm import tqdm
 from multiprocessing import Pool
 import rpad.partnet_mobility_utils.articulate as pma
-from have.env.simulations.simulation import *
-from have.env.simulations.suction import *
-from have.env.simulations.suction import GTFlowModel, PMSuctionSim
+from have.env.articulated.simulation import *
+from have.env.articulated.suction import *
+from have.env.articulated.suction import GTFlowModel, PMSuctionSim
 
 
 np.random.seed(42)

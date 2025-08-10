@@ -1,4 +1,5 @@
 # TODO: merge uneven object dataset collection code
+import os
 import json
 import pickle as pkl
 import hydra
@@ -12,6 +13,7 @@ import wandb
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
+from have.generator.datasets.uneven_object import UnevenObjectDataModule
 from have.generator.datasets.flow_trajectory import FlowTrajectoryDataModule
 from have.generator.models.flow_diffuser_pndit import (   # For unconditional diffusion training
     FlowTrajectoryDiffusionModule_PNDiT,
@@ -25,10 +27,11 @@ from have.generator.utils.script_utils import (
     match_fn,
 )
 
-data_module_class = FlowTrajectoryDataModule
-training_module_class = {
-    "trajectory_diffuser_pndit": FlowTrajectoryDiffusionModule_PNDiT,   # PNDiT (Uncond diffusion)
+data_module_class = {
+    "uneven": UnevenObjectDataModule,
+    "articulated": FlowTrajectoryDataModule
 }
+training_module_class = FlowTrajectoryDiffusionModule_PNDiT  # PNDiT (Uncond diffusion)
 
 
 @hydra.main(config_path="../configs", config_name="train", version_base="1.3")
@@ -70,17 +73,17 @@ def main(cfg):
             toy_dataset = json.load(f)
 
     # Create flow dataset
-    datamodule = data_module_class(
+    datamodule = data_module_class[cfg.dataset.task](
         root=cfg.dataset.data_dir,
         batch_size=cfg.training.batch_size,
         num_workers=cfg.resources.num_workers,  #0
         n_proc=cfg.resources.n_proc_per_worker,  #1
         seed=cfg.seed,
-        history=False,
+        history=False,   # Only support unconditional generator in this repo
         randomize_size=cfg.dataset.randomize_size,
         augmentation=cfg.dataset.augmentation,
         trajectory_len=1,  # Only used when training model that predicts trajectories
-        special_req="half-half",
+        special_req=cfg.dataset.special_req,
         n_repeat=200,
         toy_dataset=toy_dataset,
     )
@@ -94,7 +97,7 @@ def main(cfg):
         # For half-half training:
         # - Unseen loader: randomly opened doors
         # - Validation loader: fully closed doors
-        fully_closed_datamodule = data_module_class(
+        fully_closed_datamodule = data_module_class[cfg.dataset.task](
             root=cfg.dataset.data_dir,
             batch_size=cfg.training.batch_size,
             num_workers=cfg.resources.num_workers,
@@ -153,7 +156,7 @@ def main(cfg):
     # and the logging.
     ######################################################################
 
-    model = training_module_class[cfg.training.name](
+    model = training_module_class(
         network, training_cfg=cfg.training, model_cfg=cfg.model
     )
 

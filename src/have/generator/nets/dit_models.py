@@ -17,7 +17,7 @@ import torch
 import torch.nn as nn
 from timm.models.vision_transformer import Attention, Mlp
 
-import failure_recovery.nets.pn2 as pnp
+import have.generator.nets.pn2 as pnp
 
 
 def modulate(x, shift, scale):

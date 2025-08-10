@@ -12,12 +12,12 @@ from plotly.subplots import make_subplots
 from torch import optim
 
 # from flowbothd.models.modules.dit_models import DiT
-from failure_recovery.metrics.trajectory import (
+from have.generator.metrics.trajectory import (
     artflownet_loss,
     flow_metrics,
     normalize_trajectory,
 )
-from failure_recovery.models.dit_utils import create_diffusion
+from have.generator.models.dit_utils import create_diffusion
 
 
 # Flow predictor with PN++ + DiT

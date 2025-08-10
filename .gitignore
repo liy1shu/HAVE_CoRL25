@@ -4,3 +4,7 @@
 *.pyd
 .env
 .venv
+
+logs/
+build/
+src/have.egg-info/

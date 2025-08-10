@@ -5,8 +5,7 @@ import rpad.partnet_mobility_utils.dataset as rpd
 import torch_geometric.loader as tgl
 from rpad.pyg.dataset import CachedByKeyDataset
 
-from failure_recovery.datasets.flow_history_dataset import FlowHistoryDataset
-from failure_recovery.datasets.flow_trajectory_dataset_pyg import (
+from have.generator.datasets.flow_trajectory_dataset_pyg import (
     FlowTrajectoryPyGDataset,
 )
 

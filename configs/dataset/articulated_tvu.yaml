@@ -1,7 +1,10 @@
 name: articulated_tvu
-data_dir: ${oc.env:HOME}/datasets/partnet-mobility
-toy_dataset_path: ${YOUR PROJECT PATH}/configs/dataset/articulated_tvu.json
+task: articulated
 
+data_dir: ${oc.env:HOME}/datasets/partnet-mobility # Change to your partnet-mobility dataset path
+toy_dataset_path: ${hydra:runtime.cwd}/configs/dataset/articulated_tvu.json
+
+special_req: half-half
 lr: 1e-3
 mask_input_channel: True
 randomize_camera: True

@@ -11,7 +11,7 @@ import torch_geometric.data as tgd
 # from src.scoring_model_cross import TransformerModel  # With cross attention
 # from src.scoring_model_qkv import TransformerModel   #With qkv
 from src.scoring_model_qkv_v2 import TransformerModel
-from failure_recovery.metrics.trajectory import flow_metrics
+from have.generator.metrics.trajectory import flow_metrics
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -49,8 +49,8 @@ class ModelConfig:
 
 model_config = ModelConfig()
 
-from failure_recovery.models.flow_diffuser_pndit import FlowTrajectoryDiffuserInferenceModule_PNDiT
-from failure_recovery.nets.dit_models import PN2DiT
+from have.generator.models.flow_diffuser_pndit import FlowTrajectoryDiffuserInferenceModule_PNDiT
+from have.generator.nets.dit_models import PN2DiT
 
 network = PN2DiT(
     in_channels=3,
@@ -68,9 +68,9 @@ sampling_model = sampling_model.to(device)
 
 
 import rpad.partnet_mobility_utils.articulate as pma
-from failure_recovery.simulations.simulation import *
-from failure_recovery.simulations.suction import *
-from failure_recovery.simulations.suction import GTFlowModel, PMSuctionSim
+from have.env.articulated.simulation.simulation import *
+from have.env.articulated.simulation.suction import *
+from have.env.articulated.simulation.suction import GTFlowModel, PMSuctionSim
 from tracking.delta_tracker import Tracker
 
 

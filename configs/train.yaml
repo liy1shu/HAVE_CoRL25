@@ -5,7 +5,7 @@ job_type: ${mode}_${dataset.name}_${model.name}
 
 defaults:
   # Each of these have their own configuration parameters.
-  - dataset: articulated # [articulated, articulated_tvu, multimodal_door, uneven_object]
+  - dataset: uneven_object # [articulated, articulated_tvu, multimodal_door, uneven_object]
   - model: diffuser_pndit 
 
   # We assume a different training config for each dataset/model pair.

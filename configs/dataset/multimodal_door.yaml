@@ -1,7 +1,10 @@
 name: multimodal_door
-data_dir: ${oc.env:HOME}/datasets/failure_history_door
-toy_dataset_path: ${YOUR PROJECT PATH}/configs/dataset/multimodal_door.json
+task: articulated
 
+data_dir: ${oc.env:HOME}/datasets/failure_history_door # Change to your generated multimodal door dataset path
+toy_dataset_path: ${hydra:runtime.cwd}/configs/dataset/multimodal_door.json
+
+special_req: half-half
 lr: 1e-3
 mask_input_channel: True
 randomize_camera: True

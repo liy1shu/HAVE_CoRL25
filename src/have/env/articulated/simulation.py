@@ -8,7 +8,7 @@ import rpad.pyg.nets.pointnet2 as pnp
 import torch
 from rpad.partnet_mobility_utils.data import PMObject
 
-from failure_recovery.simulations.suction import (  # compute_flow,; run_trial_with_history,
+from have.env.articulated.suction import (  # compute_flow,; run_trial_with_history,
     GTFlowModel,
     GTTrajectoryModel,
     PMSuctionSim,
@@ -16,9 +16,6 @@ from failure_recovery.simulations.suction import (  # compute_flow,; run_trial_w
     run_trial_with_history_filter,
     run_trial_with_switch_models,
 )
-
-# from failure_recovery.simulations.suction_v2 import PMSuctionSim
-# from failure_recovery.simulations.suction_v2 import run_trial, run_trial_with_history_filter
 
 
 def trial_flow(
@@ -555,7 +552,7 @@ if __name__ == "__main__":
     # trial_with_prediction(obj_id="35059", network=network_15, n_step=1, gui=False, all_joint=False)
 
     # # Trial with dit
-    # from failure_recovery.models.modules.dit_models import DiT
+    # from have.generator.models.modules.dit_models import DiT
 
     # torch.set_printoptions(precision=10)  # Set higher precision for PyTorch outputs
     # np.set_printoptions(precision=10)
@@ -577,7 +574,7 @@ if __name__ == "__main__":
     initialize(config_path="../../../configs", version_base="1.3")
     cfg = compose(config_name="eval_sim")
 
-    # from failure_recovery.models.flow_diffuser_dit import (
+    # from have.generator.models.flow_diffuser_dit import (
     #     FlowTrajectoryDiffuserSimulationModule_DiT,
     # )
 
@@ -587,11 +584,11 @@ if __name__ == "__main__":
     # model.load_from_ckpt(ckpt_file)
     # model.eval()
 
-    from failure_recovery.models.flow_diffuser_hispndit import (
+    from have.generator.models.flow_diffuser_hispndit import (
         FlowTrajectoryDiffuserSimulationModule_HisPNDiT,
     )
-    from failure_recovery.models.modules.dit_models import PN2HisDiT
-    from failure_recovery.models.modules.history_encoder import HistoryEncoder
+    from have.generator.models.modules.dit_models import PN2HisDiT
+    from have.generator.models.modules.history_encoder import HistoryEncoder
 
     # History model
     network = {
@@ -625,7 +622,7 @@ if __name__ == "__main__":
 
     # import rpad.pyg.nets.pointnet2 as pnp_orig
 
-    # from failure_recovery.models.flow_trajectory_predictor import (
+    # from have.generator.models.flow_trajectory_predictor import (
     #     FlowSimulationInferenceModule,
     # )
 

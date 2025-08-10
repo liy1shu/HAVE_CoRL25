@@ -14,10 +14,10 @@ from rpad.partnet_mobility_utils.render.pybullet import PMRenderEnv
 from rpad.pybullet_envs.suction_gripper import FloatingSuctionGripper
 from scipy.spatial.transform import Rotation as R
 
-from failure_recovery.datasets.flow_history_dataset import (
+from have.generator.datasets.flow_trajectory_dataset import (
     compute_flow_trajectory,
 )
-from failure_recovery.metrics.trajectory import normalize_trajectory
+from have.generator.metrics.trajectory import normalize_trajectory
 
 
 class PMSuctionSim:
