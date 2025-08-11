@@ -10,7 +10,7 @@ class Tracker():
         if delta_path is not None and delta_path not in sys.path:
             sys.path.insert(0, delta_path)
             
-        from have.utils.DELTA.densetrack3d.models.densetrack3d.densetrack3d import DenseTrack3D
+        from have.utils.densetrack3d import DenseTrack3D
         from have.utils.DELTA.densetrack3d.models.predictor.predictor import Predictor3D
         self.model = DenseTrack3D(
             stride=4,
