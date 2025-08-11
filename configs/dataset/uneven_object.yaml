@@ -1,8 +1,9 @@
 name: uneven_object
 task: uneven
 
+# Generator
 data_dir: ${oc.env:HOME}/datasets/unevenobject # Change to your generated uneven object dataset path
-toy_dataset_path: ${hydra:runtime.cwd}/configs/dataset/uneven_object.json
+toy_dataset_path: ${hydra:runtime.cwd}/metadata/uneven_object.json
 
 special_req: "torque"
 mask_input_channel: True
@@ -11,3 +12,9 @@ randomize_size: False
 augmentation: False
 seed: 42
 n_points: 1200
+
+# Verifier specific
+verifier_dataset_path: /data/failure_dataset_uneven/  # Change to your path to the verifier dataset
+weighted: False
+scale_score: False
+split: ['toy', 'toy', 'toy']

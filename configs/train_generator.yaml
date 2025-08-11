@@ -1,0 +1,30 @@
+mode: train
+
+# This is somewhat arbitrary.
+job_type: ${mode}_${dataset.name}_${model.name}
+
+defaults:
+  # Each of these have their own configuration parameters.
+  - dataset: articulated # [articulated, articulated_heldout, multimodal_door, uneven_object]
+  - model: diffuser_pndit 
+
+  # We assume a different training config for each dataset/model pair.
+  - training: ${dataset}_${model}
+
+  # Simple shared imports.
+  - _logging
+
+  # Override.
+  - _self_
+
+seed: 42
+
+resources:
+  num_workers: 30
+  n_proc_per_worker: 2
+  gpus:
+    - 0
+
+wandb:
+  # Assume no group provided, we will create a default one.
+  group: Null

@@ -1,8 +1,8 @@
-name: articulated
+name: articulated_heldout
 task: articulated
 
 data_dir: ${oc.env:HOME}/datasets/partnet-mobility # Change to your partnet-mobility dataset path
-toy_dataset_path: null  # if general articulated objects
+toy_dataset_path: ${hydra:runtime.cwd}/metadata/articulated_heldout.json
 
 special_req: half-half
 lr: 1e-3
@@ -14,7 +14,7 @@ seed: 42
 n_points: 1200
 
 # Verifier specific
-verifier_dataset_path: /data/failure_dataset_door/train_val/ # Change to your path to the verifier dataset
+verifier_dataset_path: /data/failure_dataset/held_out/ # Change to your path to the verifier dataset
 weighted: False
 scale_score: True
 split: ['train', 'val', 'val']

@@ -1,25 +1,23 @@
 # Use flash attention & cross attention
-# TODO: fix...
 # TODO: merge uneven object verifier code
 from tqdm import tqdm
 import json
 import os
-import math
 import torch
+import hydra
 import wandb
+import omegaconf
 import torch.nn as nn
-import torch_geometric.data as tgd
-import rpad.pyg.nets.pointnet2 as pnp
 from torch.utils.data import DataLoader
 from torch import optim
-import torch.nn.functional as F
 from accelerate import Accelerator
 from accelerate.utils import DistributedDataParallelKwargs
 
 from have.verifier.datasets.action_dataset import ActionDataset, collate_fn
 from have.verifier.models.ha_verifier import HAVErifier
 
-os.environ["NCCL_P2P_LEVEL"] = "NVL" # For better multi-GPU communication
+
+# os.environ["NCCL_P2P_LEVEL"] = "NVL" # For better multi-GPU communication
 
 
 def test(model, dataloader, accelerator, epoch_id=None):
@@ -94,53 +92,51 @@ def test(model, dataloader, accelerator, epoch_id=None):
     return avg_loss, avg_default_loss, avg_weighted_loss
 
 
-if __name__ == '__main__':
+@hydra.main(config_path="../configs", config_name="train_verifier", version_base="1.3")
+def main(cfg):
+    print(
+        json.dumps(
+            omegaconf.OmegaConf.to_container(cfg, resolve=True, throw_on_missing=False),
+            sort_keys=True,
+            indent=4,
+        )
+    )
 
-    LEARNING_RATE = 1e-4
-    EPOCHS = 100
-    BATCH_SIZE = 10  # 6
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.set_float32_matmul_precision("highest")
 
-    # breakpoint()
     accelerator = Accelerator(log_with="wandb", kwargs_handlers=[DistributedDataParallelKwargs(find_unused_parameters=True)])
 
     accelerator.init_trackers(
-        project_name="failure_recovery", 
-        config={"learning_rate": LEARNING_RATE},
-        init_kwargs={"wandb": {"entity": "r-pad"}}
+        project_name=cfg.wandb.project, 
+        config={"learning_rate": cfg.training.learning_rate},
+        init_kwargs={"wandb": {"entity": cfg.wandb.entity}}
     )
 
     # Load datasets
-    train_dataset = ActionDataset("train")
-    # train_dataset_random = ActionDataset("train", "/project_data/held/yishul/datasets/failure_dataset/articulated_object_random/train_val/")
-    # print(len(train_dataset), len(train_dataset_random))
-    # breakpoint()
-    dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn, num_workers=4, persistent_workers=True, pin_memory=True)
+    train_dataset = ActionDataset(cfg.dataset.split[0], root_dir=cfg.dataset.verifier_dataset_path, weighted=cfg.dataset.weighted, scale_score=cfg.dataset.scale_score)
+    dataloader = DataLoader(train_dataset, batch_size=cfg.training.batch_size, shuffle=True, collate_fn=collate_fn, num_workers=4, persistent_workers=True, pin_memory=True)
 
-    val_dataset = ActionDataset("val")
+    val_dataset = ActionDataset(cfg.dataset.split[1], root_dir=cfg.dataset.verifier_dataset_path, weighted=cfg.dataset.weighted, scale_score=cfg.dataset.scale_score)
     val_dataloader = DataLoader(val_dataset, batch_size=1, shuffle=False, collate_fn=collate_fn)
 
-    test_dataset = ActionDataset("val")
+    test_dataset = ActionDataset(cfg.dataset.split[2], root_dir=cfg.dataset.verifier_dataset_path, weighted=cfg.dataset.weighted, scale_score=cfg.dataset.scale_score)
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, collate_fn=collate_fn)
 
 
     device = accelerator.device
 
     # Final model size
-    model = HAVErifier(d_model=128, nhead=4, num_layers=4, dim_feedforward=256, max_len=200)
-
-    # # Smaller model size
-    # model = HAVErifier(d_model=64, nhead=2, num_layers=2, dim_feedforward=256, max_len=200)
-
-    # # Bigger model size
-    # model = HAVErifier(d_model=256, nhead=8, num_layers=6, dim_feedforward=512, max_len=200)
-
+    model = HAVErifier(d_model=cfg.model.d_model, nhead=cfg.model.nhead, num_layers=cfg.model.num_layers, dim_feedforward=cfg.model.dim_feedforward, pn_bsz=cfg.model.pn_bsz, max_len=cfg.model.max_len)
     model = model.to(device)
-    # state_dict = torch.load("./ckpts/scoring_module/uncond_v2_qkv_score_module_v6-2_last.pth", map_location=accelerator.device)
-    # new_state_dict = {key[7:]: value for key, value in state_dict.items()}
-    # model.load_state_dict(new_state_dict)  # Load the state_dict into the model
 
+    if cfg.model.pretrained_path is not None:
+        state_dict = torch.load(cfg.model.pretrained_path, map_location=accelerator.device)
+        new_state_dict = {key[7:]: value for key, value in state_dict.items()}
+        model.load_state_dict(new_state_dict)
     
-    optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+    optimizer = optim.AdamW(model.parameters(), lr=cfg.training.learning_rate)
 
     model, optimizer, dataloader, val_dataloader, test_dataloader = accelerator.prepare(model, optimizer, dataloader, val_dataloader, test_dataloader)
 
@@ -148,19 +144,16 @@ if __name__ == '__main__':
     best_loss = 1000
     best_mse_val = 100
     best_weighted_mse_val = 100
-    best_mse_test = 100
-
-    # mse_val = test(model, accelerator=accelerator, dataloader=val_dataloader)
 
     # Training loop
-    for epoch in range(EPOCHS):
+    for epoch in range(cfg.training.epochs):
 
         model.train()
 
         running_loss, running_his_loss, running_pred_loss, running_default_pred_loss = 0.0, 0.0, 0.0, 0.0
 
         progress_bar = tqdm(dataloader, disable=not accelerator.is_main_process)
-        progress_bar.set_description(f"Epoch {epoch+1}/{EPOCHS}")
+        progress_bar.set_description(f"Epoch {epoch+1}/{cfg.training.epochs}")
 
         # Perform validation and testing every 5 epochs
     
@@ -183,17 +176,16 @@ if __name__ == '__main__':
             # Compute losses
             pred_loss = nn.MSELoss()(outputs, gt_scores.float().unsqueeze(1))
             default_pred_loss = nn.MSELoss()(default_scores, gt_scores.float().unsqueeze(1))
-            # print(outputs.shape, default_scores.shape)
             his_score_loss = nn.MSELoss()(scores[~padding_masks[:, 1:]], history_scores.float().unsqueeze(1)) if scores is not None else 0.0
 
-            loss = pred_loss + his_score_loss + default_pred_loss# Modify if you want to include history score loss
+            loss = pred_loss + his_score_loss + default_pred_loss # Modify if you want to include history score loss
 
             # Backward pass
             accelerator.backward(loss)
             optimizer.step()
 
             running_loss += loss.item()
-            running_default_pred_loss += 0.5 * default_pred_loss.item()
+            running_default_pred_loss += default_pred_loss.item()
             running_his_loss += his_score_loss.item() if isinstance(his_score_loss, torch.Tensor) else 0.0
             running_pred_loss += pred_loss.item()
 
@@ -209,17 +201,11 @@ if __name__ == '__main__':
         if accelerator.is_main_process:
             # Log epoch-level metrics
             epoch_loss = running_loss / len(dataloader)
-            print(f"Epoch [{epoch+1}/{EPOCHS}], Loss: {epoch_loss:.4f}")
-            # if epoch_loss < best_loss:
-            #     # Save best model
-            #     accelerator.save(model.state_dict(), "./ckpts/scoring_module/trainval_score_module_v6-2_best.pth")
-            #     best_loss = epoch_loss
-            # accelerator.save(model.state_dict(), "./ckpts/scoring_module/random_nodefault_supervision_v2_qkv_score_module_v6-2_last.pth")
-
-            accelerator.save(model.state_dict(), "./ckpts/scoring_module/rebuttal/tvu_bigger_v2_qkv_score_module_v6-2_last.pth") #smaller
+            print(f"Epoch [{epoch+1}/{cfg.training.epochs}], Loss: {epoch_loss:.4f}")
+            accelerator.save(model.state_dict(), os.path.join(wandb.run.dir, "last.pth")) #smaller
 
 
-        if epoch % 1 == 0:
+        if epoch % cfg.training.eval_interval == 0:
             # Validation
             model.module.scorer.test=True
             mse_val, mse_default_val, weighted_mse_val = test(model, accelerator=accelerator, dataloader=val_dataloader)
@@ -228,20 +214,15 @@ if __name__ == '__main__':
                 accelerator.log({"val_MSE": mse_val, "default_val_MSE": mse_default_val,"weighted_val_MSE": weighted_mse_val}, step=global_step)
                 if mse_val < best_mse_val:
                     best_mse_val = mse_val
-                    # accelerator.save(model.state_dict(), "./ckpts/scoring_module/random_nodefault_supervision_v2_qkv_score_module_v6-2_valbest.pth")
-                    accelerator.save(model.state_dict(), "./ckpts/scoring_module/rebuttal/tvu_bigger_v2_qkv_score_module_v6-2_last.pth")
+                    accelerator.save(model.state_dict(), "val_best.pth")
 
                 if weighted_mse_val < best_weighted_mse_val:
                     best_weighted_mse_val = weighted_mse_val
-                    # accelerator.save(model.state_dict(), "./ckpts/scoring_module/random_nodefault_supervision_v2_qkv_score_module_v6-2_weighted_valbest.pth")
-                    accelerator.save(model.state_dict(), "./ckpts/scoring_module/rebuttal/tvu_bigger_v2_qkv_score_module_v6-2_last.pth")
-
-
-                # accelerator.log({"test_MSE": mse_test, "default_test_MSE": mse_default_test, "weighted_test_MSE": weighted_mse_test}, step=global_step)
-                # if mse_test < best_mse_test:
-                #     best_mse_test = mse_test
-                #     accelerator.save(model.state_dict(), "./ckpts/scoring_module/qkv_score_module_v6-2_testbest.pth")
-
+                    accelerator.save(model.state_dict(), "weighted_val_best.pth")
 
             model.module.scorer.test=False
 
+
+
+if __name__ == '__main__':
+    main()

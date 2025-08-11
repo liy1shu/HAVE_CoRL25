@@ -1,19 +1,20 @@
-# TODO: fix, and merge uneven object dataset collection code
 import random
 import json
 import os
+import sys
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import numpy as np
 import torch
-import os
 import pickle as pkl
 from tqdm import tqdm
+from pathlib import Path
 from multiprocessing import Pool
 import rpad.partnet_mobility_utils.articulate as pma
 from have.env.articulated.simulation import *
 from have.env.articulated.suction import *
 from have.env.articulated.suction import GTFlowModel, PMSuctionSim
+from have.env.uneven.scoop_env import ScoopEnv
 
 
 np.random.seed(42)
@@ -21,26 +22,20 @@ torch.manual_seed(42)
 torch.set_printoptions(precision=10)  # Set higher precision for PyTorch outputs
 np.set_printoptions(precision=10)
 
-full_dataset = False
-
-closed_gt_rate = 0.2
-open_gt_rate = 0.8
-obj_ids = ["9127_plll", "9127_pllr", "9127_pshl", "9127_pshr"]
-if full_dataset:
-    pm_dir = os.path.expanduser("/home/yishu/datasets/partnet-mobility/raw/")
-else:
-    pm_dir = os.path.expanduser("/home/yishu/datasets/failure_history_door/raw/")
+# For curated test dataset generation (sanity check, not used in general dataset generation)
 curate_names = {
     "9127_plll": ["pllr", "pshl", "pshr"],
     "9127_pllr": ["plll", "pshr", "pshl"],
     "9127_pshl": ["pshr", "plll", "pllr"],
     "9127_pshr": ["pshl", "pllr", "plll"]
 }
+obj_ids = ["9127_plll", "9127_pllr", "9127_pshl", "9127_pshr"]
 
-evaluate_random_action_cnt = 10
+closed_gt_rate = 0.2
+open_gt_rate = 0.8
 
 # Action, Action result (point cloud after action), Action result (Tracking flow), Score (% of gt)
-def generate_trajectory(step_cnt=-1, obj_id=-1, joint_id=0, curate=False, curate_id=None):
+def generate_trajectory(pm_dir, step_cnt=-1, obj_id=-1, joint_id=0, evaluate_random_action_cnt=10, curate=False, curate_id=None):
     long_history = np.random.randint(0, 2)
     if long_history == 1:
         step_cnt = np.random.randint(1, 31) if step_cnt == -1 else step_cnt # Randomly generate a history length (history + 1 curr step).
@@ -495,7 +490,7 @@ def generate_trajectory(step_cnt=-1, obj_id=-1, joint_id=0, curate=False, curate
     return trajectory, animation, final_rel_angle
 
 
-def generate_trajectories(obj_ids, movable_links, output_path, traj_per_joint, max_trials):
+def generate_trajectories(obj_ids, movable_links, pm_dir, output_path, traj_per_joint, max_trials, evaluate_random_action_cnt):
     trajectories = []
     print(f"Generating for {len(obj_ids)} objects...")
     for obj_id in tqdm(obj_ids):
@@ -507,7 +502,7 @@ def generate_trajectories(obj_ids, movable_links, output_path, traj_per_joint, m
         while traj_cnt < traj_per_joint and trial_cnt < max_trials:
             joint_id = np.random.choice(movable_links[obj_id])
             # for joint_id in movable_links[obj_id]:
-            trajectory, _, _ = generate_trajectory(obj_id=obj_id, joint_id=joint_id)
+            trajectory, _, _ = generate_trajectory(pm_dir=pm_dir, obj_id=obj_id, joint_id=joint_id, evaluate_random_action_cnt=evaluate_random_action_cnt)
             if trajectory is not None and len(trajectory["scores"]) == len(trajectory["pcds"]):
                 trajectory['obj_id'] = obj_id
                 trajectory['joint_id'] = joint_id
@@ -530,8 +525,217 @@ def generate_trajectories(obj_ids, movable_links, output_path, traj_per_joint, m
     print(f"Saved trajectories to {output_path}")
 
 
-def main(train_obj_ids, test_obj_ids, movable_links):
-    num_processes = 16
+def generate_trajectory_uneven(obj_id, step_cnt=-1, gui=False, normalize_pcd=False, mode="train", delta_track_path=None, delta_ckpt_path=None):
+    # determine the length of the trajectory
+    step_cnt = np.random.randint(1, 10) if step_cnt == -1 else step_cnt
+        
+    # initialize the environment
+    urdf_path = os.path.join("~/datasets/unevenobject/raw", mode)
+    env = ScoopEnv(rod_id = obj_id, use_GUI = gui, data_path = urdf_path, delta_track_path=delta_track_path, delta_ckpt_path=delta_ckpt_path)
+    env.init_reset()
+    last_action = env.prepare_scoop()
+
+    # initialize the trajectory
+    trajectory = {
+        "pcds": [], # obs point cloud, here is cuboid+rod
+        "flows": [], # 'delta'
+        "obs_flows": [], # observed action results, P_world_new - P_world
+        "scores": [], # a scalar
+        "evaluate": [],
+    }
+
+    trajectory["evaluate"] = {
+        "pcds": [], 
+        "flows":[], 
+        "scores": []
+    }
+    
+    P_worlds = []
+    
+    # generate the trajectory
+    for i in range(step_cnt):
+        render = env.render(filter_nonobj_pts=True, n_pts=1200, normalize_pcd=normalize_pcd)
+        env.update_tracker(render['obs'])
+        pcd = render['P_world']
+        P_worlds.append(render['P_world_org'])
+        trajectory["pcds"].append(pcd)
+        trajectory["evaluate"]["pcds"].append(pcd)
+        
+        start_step = False
+        if i == step_cnt - 1:
+            randomize = 1
+        elif i == 0:
+            randomize = 0
+            start_step = True
+        else:
+            randomize = 0 # round(np.random.uniform(0, 1.2))
+
+        if randomize == 0:
+            action = env.choose_action_random(last_action, start_step)
+        elif randomize == 1:
+            action = env.ground_truth_action(last_action)
+        
+        flow = env.get_flow(pcd, render["pc_seg_obj"], action, option="torque", normalize_pcd=normalize_pcd)
+        trajectory["flows"].append(flow)
+        trajectory["evaluate"]["flows"].append(flow)
+        
+        env.change_collision_with_object(turn_on=False)
+        step_success = env.step(action, False)
+        it_cnt = 0
+        while not step_success and it_cnt < 5: # ground_truth should always succeed
+            action = env.choose_action_random(action, start_step)
+            step_success = env.step(action, False)
+        if not step_success:
+            env.close()
+            return None
+        env.change_collision_with_object(turn_on=True)
+        action = env.elevate(action)
+        env.step(action, False)
+        
+        render = env.render(filter_nonobj_pts=True, n_pts=1200)
+        env.update_tracker(render['obs'])
+        P_worlds.append(render['P_world_org'])
+        
+        param = 10
+        obs_flow = env.get_latest_obs_flow(P_worlds[-2], normalize_pcd=normalize_pcd) * param
+        trajectory["obs_flows"].append(obs_flow)
+        
+        reset = env.check_reset()
+        if reset:
+            score = -1
+        else:
+            score = env.get_score()
+        if score == None: # no contact
+            env.close()
+            return None
+        trajectory["scores"].append(score)
+        trajectory["evaluate"]["scores"].append(score)
+    
+        success, _ = env.detect_success()
+        
+        if success and i == 0: # no history
+            env.close()
+            return None
+        
+        if reset:
+            env.reset()
+            last_action = env.prepare_scoop()
+        else:
+            last_action = env.lower(action)
+            env.step(last_action, False)
+            
+        if success:
+            break
+
+    trajectory["pcds"] = np.stack(trajectory["pcds"], axis=0)
+    trajectory["flows"] = np.stack(trajectory["flows"], axis=0)
+    trajectory["obs_flows"] = np.stack(trajectory["obs_flows"], axis=0)
+    trajectory["scores"] = np.array(trajectory["scores"])
+    
+    # get some random data
+    for random_seed in range(5):
+        score = None
+        pcd = None
+        flow = None
+        while score == None:
+            render = env.render(filter_nonobj_pts=True, n_pts=1200, normalize_pcd=normalize_pcd)
+            pcd = render['P_world']
+            
+            action = env.choose_action_random(last_action)
+            
+            flow = env.get_flow(pcd, render["pc_seg_obj"], action, option="torque", normalize_pcd=normalize_pcd)
+                    
+            env.change_collision_with_object(turn_on=False)
+            step_success = env.step(action, False)
+            while not step_success: # ground_truth should always succeed
+                action = env.choose_action_random(action)
+                env.change_collision_with_object(turn_on=False)
+                step_success = env.step(action, False)
+            env.change_collision_with_object(turn_on=True)
+            action = env.elevate(action)
+            env.step(action, False)
+            
+            reset = env.check_reset()
+            if reset:
+                score = None
+                env.reset()
+                last_action = env.prepare_scoop()
+            else:
+                score = env.get_score()
+                last_action = env.lower(action)
+                env.step(last_action, False)
+        
+        trajectory["evaluate"]["pcds"].append(pcd)
+        trajectory["evaluate"]["flows"].append(flow)
+        trajectory["evaluate"]["scores"].append(score)
+
+    # uniform data
+    uniform_num = 10
+    for i in range(uniform_num):
+        score = None
+        pcd = None
+        flow = None
+        while score == None:
+            render = env.render(filter_nonobj_pts=True, n_pts=1200, normalize_pcd=normalize_pcd)
+            pcd = render['P_world']
+            
+            action = env.choose_action_random_uniform(last_action, i, uniform_num)
+            
+            flow = env.get_flow(pcd, render["pc_seg_obj"], action, option="torque", normalize_pcd=normalize_pcd)
+            
+            env.change_collision_with_object(turn_on=False)
+            step_success = env.step(action, False)
+            while not step_success: # ground_truth should always succeed
+                action = env.choose_action_random_uniform(action, i, uniform_num)
+                step_success = env.step(action, False)
+            env.change_collision_with_object(turn_on=True)
+            action = env.elevate(action)
+            env.step(action, False)
+            
+            reset = env.check_reset()
+            if reset:
+                score = None
+                env.reset()
+                last_action = env.prepare_scoop()
+            else:
+                score = env.get_score()
+                last_action = env.lower(action)
+                env.step(last_action, False)
+                
+        trajectory["evaluate"]["pcds"].append(pcd)
+        trajectory["evaluate"]["flows"].append(flow)
+        trajectory["evaluate"]["scores"].append(score)
+
+    trajectory["evaluate"]["pcds"] = np.stack(trajectory["evaluate"]["pcds"], axis=0)
+    trajectory["evaluate"]["flows"] = np.stack(trajectory["evaluate"]["flows"], axis=0)
+    trajectory["evaluate"]["scores"] = np.array(trajectory["evaluate"]["scores"])
+    
+    env.close()
+    return trajectory
+
+
+def generate_trajectories_uneven(obj_id, output_path, traj_per_joint, max_trials, normalize_pcd, mode, delta_track_path=None, delta_ckpt_path=None):
+    trajectories = []
+    print(f"Generating trajectories for {obj_id}")
+    
+    traj_cnt = 0
+    trial_cnt = 0
+    while traj_cnt < traj_per_joint and trial_cnt < max_trials:
+        trajectory = generate_trajectory_uneven(obj_id, normalize_pcd=normalize_pcd, mode=mode, delta_track_path=delta_track_path, delta_ckpt_path=delta_ckpt_path)
+        if trajectory is not None and len(trajectory["scores"]) == len(trajectory["pcds"]):
+            trajectory['obj_id'] = obj_id
+            trajectories.append(trajectory)
+            traj_cnt += 1
+        trial_cnt += 1
+        
+    with open(output_path, 'wb') as f:
+        pkl.dump(trajectories, f)
+
+    print(f"Saved trajectories to {output_path}")
+
+
+
+def main(pm_dir, output_path, train_obj_ids, test_obj_ids, movable_links, evaluate_random_action_cnt, num_processes=16, traj_per_joint_train = 200, traj_per_joint_test = 50, max_trials_train = 400, max_trials_test = 100):
     # train_obj_ids = [...]  # Replace with your train object IDs
     # test_obj_ids = [...]  # Replace with your test object IDs
     # movable_links = {...}  # Replace with your movable links data
@@ -539,12 +743,9 @@ def main(train_obj_ids, test_obj_ids, movable_links):
     # Parameters for trajectory generation
     # train_output_path = '/data/failure_dataset/fullset_train_trajectory_dataset_random_action'
     # test_output_path = '/data/failure_dataset/fullset_test_trajectory_dataset_random_action'
-    train_output_path = '/data/failure_dataset_door/door_train_trajectory_dataset_random_action'
-    test_output_path = '/data/failure_dataset_door/door_test_trajectory_dataset_random_action'
-    traj_per_joint_train = 200
-    traj_per_joint_test = 50
-    max_trials_train = 400
-    max_trials_test = 100
+    train_output_path = os.path.join(output_path, 'train')
+    test_output_path = os.path.join(output_path, 'test')
+    
 
     # Partition data for multiprocessing
     train_obj_chunks = [train_obj_ids[i::num_processes] for i in range(num_processes)]
@@ -554,7 +755,7 @@ def main(train_obj_ids, test_obj_ids, movable_links):
     with Pool(num_processes) as pool:
         pool.starmap(
             generate_trajectories,
-            [(chunk, movable_links, f"{train_output_path}_{i}.pkl", traj_per_joint_train, max_trials_train)
+            [(chunk, movable_links, pm_dir, f"{train_output_path}_{i}.pkl", traj_per_joint_train, max_trials_train, evaluate_random_action_cnt)
              for i, chunk in enumerate(train_obj_chunks)]
         )
 
@@ -562,43 +763,138 @@ def main(train_obj_ids, test_obj_ids, movable_links):
     with Pool(num_processes) as pool:
         pool.starmap(
             generate_trajectories,
-            [(chunk, movable_links, f"{test_output_path}_{i}.pkl", traj_per_joint_test, max_trials_test)
+            [(chunk, movable_links, pm_dir, f"{test_output_path}_{i}.pkl", traj_per_joint_test, max_trials_test, evaluate_random_action_cnt)
              for i, chunk in enumerate(test_obj_chunks)]
         )
+
+
+def main_uneven(save_path, mode, traj_per_joint_train, max_trials_train, normalize_point_cloud=False, delta_track_path=None, delta_ckpt_path=None):
+    if mode == 'train':
+        obj_ids = [str(i) for i in range(200)]
+    elif mode == 'val':
+        obj_ids = [str(i) for i in range(40)]
+    elif mode == 'test':
+        obj_ids = [str(i) for i in range(40)]
+    elif mode == 'toy':
+        obj_ids = [str(i) for i in range(2,19)]
+    else:
+        raise ValueError(f"Unknown mode: {mode}")
+
+    # Parameters for trajectory generation
+    train_output_path = os.path.join(save_path, mode)
+    if not os.path.exists(train_output_path):
+        os.makedirs(train_output_path, exist_ok=True)
+
+    for i, obj_id in tqdm(enumerate(obj_ids)):
+        generate_trajectories_uneven(obj_id, f"{train_output_path}/{obj_id}.pkl", traj_per_joint_train, max_trials_train, normalize_point_cloud, mode, delta_track_path, delta_ckpt_path)
 
 
 from tqdm import tqdm
 import pickle as pkl
 import json
+import argparse
+
+def arg_parser():
+    parser = argparse.ArgumentParser(description='Generate URDF files with for Multimodal Doors.')
+    # Generation parameters
+    parser.add_argument('--num_processes', type=int, default=16, help='Number of processes to use for data generation.')
+    parser.add_argument('--traj_per_joint_train', type=int, default=200, help='Number of trajectories to generate per joint for training set.')
+    parser.add_argument('--traj_per_joint_test', type=int, default=50, help='Number of trajectories to generate per joint for test set.')
+    parser.add_argument('--max_trials_train', type=int, default=400, help='Maximum trials for training set.')
+    parser.add_argument('--max_trials_test', type=int, default=100, help='Maximum trials for test set.')
+    # Dataset parameter
+    parser.add_argument('--door', action='store_true') # Generate for door dataset only
+    parser.add_argument('--dataset_path', type=str, default='/home/yishu/datasets/partnet-mobility/raw/', help='The path of the dataset.')
+    parser.add_argument('--output_path', type=str, default='/data/failure_dataset_door/', help='The path to save the dataset.')
+    parser.add_argument('--random_action_num', type=int, default=10, help='How many random actions to generate to consist of the evaluation action set.')
+    # Uneven specific
+    parser.add_argument('--uneven', action='store_true')
+    return parser
 
 if __name__ == "__main__":
-    # TODO: organize everything into a config file..
+    args = arg_parser().parse_args()
+    full_dataset = not args.door
+    pm_dir = os.path.expanduser(args.dataset_path)
+    output_path = os.path.join(args.output_path, 'raw_pkls')
+    if not os.path.exists(output_path):
+        os.makedirs(output_path, exist_ok=True)
 
-    if full_dataset:
-        # Full dataset
-        with open('/home/yishu/failure_recovery/scripts/movable_links_fullset_000_full.json', 'r') as f:
-            movable_links = json.load(f)
+    # Articulated Objects
+    if not args.uneven:
+        if full_dataset:
+            # Full dataset
+            with open('./metadata/movable_links_fullset_000_full.json', 'r') as f:
+                movable_links = json.load(f)
 
-        with open('/home/yishu/failure_recovery/scripts/umpnet_data_split_new.json', 'r') as f:
-            data_split = json.load(f)
-        
-        train_obj_ids = [] 
-        test_obj_ids = []
+            with open('./metadata/umpnet_data_split_new.json', 'r') as f:
+                data_split = json.load(f)
+            
+            train_obj_ids = [] 
+            test_obj_ids = []
 
-        for obj_id in data_split['train'].keys():
-            train_obj_ids += data_split['train'][obj_id]['train']
-            test_obj_ids += data_split['train'][obj_id]['test']
-    else:
-        # Door dataset
-        with open('/home/yishu/failure_recovery/scripts/multimodal_door.json', 'r') as f:
-            door_split = json.load(f)
+            for obj_id in data_split['train'].keys():
+                train_obj_ids += data_split['train'][obj_id]['train']
+                test_obj_ids += data_split['train'][obj_id]['test']
+        else:
+            # Door dataset
+            with open('./metadata/multimodal_door.json', 'r') as f:
+                door_split = json.load(f)
 
-        train_obj_ids = door_split['train-train']
-        test_obj_ids = door_split['test']
-        movable_links = {}
-        for id in train_obj_ids:
-            movable_links[id] = ['_'.join(id.split('_')[1:3])]
-        for id in test_obj_ids:
-            movable_links[id] = ['_'.join(id.split('_')[1:3])]
+            train_obj_ids = door_split['train-train']
+            test_obj_ids = door_split['test']
+            movable_links = {}
+            for id in train_obj_ids:
+                movable_links[id] = ['_'.join(id.split('_')[1:3])]
+            for id in test_obj_ids:
+                movable_links[id] = ['_'.join(id.split('_')[1:3])]
 
-    main(train_obj_ids, test_obj_ids, movable_links)
+        main(pm_dir, output_path, train_obj_ids, test_obj_ids, movable_links, args.random_action_num, num_processes=args.num_processes, traj_per_joint_train=args.traj_per_joint_train, traj_per_joint_test=args.traj_per_joint_test, max_trials_train=args.max_trials_train, max_trials_test=args.max_trials_test)
+
+    else:   # Uneven objects
+        delta_absolute_path = str(Path('src/have/utils/DELTA').resolve())
+        if delta_absolute_path is not None and delta_absolute_path not in sys.path:
+            sys.path.insert(0, delta_absolute_path)
+
+        main_uneven(args.output_path, "toy", traj_per_joint_train=args.traj_per_joint_train, max_trials_train=args.max_trials_train, delta_track_path=delta_absolute_path, delta_ckpt_path=os.path.join(delta_absolute_path, "checkpoints/densetrack3d.pth")) # We only train on the toy rod dataset (same with training the generator)
+
+        # Generate indices
+        folder_path = os.path.join(args.output_path, "toy")
+
+        results = {
+            "data_idx": {},
+            "traj_idx": {},
+            "action_idx": {}
+        }
+
+        data_idx = 0 
+        traj_idx = 0
+        action_idx = 0
+
+        for file_name in os.listdir(folder_path):
+            if file_name.endswith('.pkl'):
+                file_path = os.path.join(folder_path, file_name)
+                
+            try:
+                with open(file_path, 'rb') as f:
+                    data = pkl.load(f)
+            except FileNotFoundError:
+                print(f"File {file_name} not found.")
+                continue
+
+            for i, item in enumerate(data):
+                for idx in range(len(item['evaluate']['scores'])):
+                    results['data_idx'][f'{data_idx}'] = data[i]['obj_id']
+                    results['traj_idx'][f'{traj_idx}'] = i
+                    results['action_idx'][f'{action_idx}'] = idx
+                    data_idx += 1
+                    traj_idx += 1
+                    action_idx += 1
+            
+            if (len(data) != 20):
+                print(f'Data {file_name} has only {len(data)} trajs')
+
+        # save the indices as a json file
+        with open(os.path.join(folder_path, 'indices.json'), 'w') as f:
+            json.dump(results, f, indent=4)
+
+        print("JSON file has been created successfully.")

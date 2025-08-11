@@ -8,20 +8,30 @@ import torch_geometric.data as tgd
 
 
 class ActionDataset(Dataset):
-    def __init__(self, subset, root_dir='/project_data/held/yishul/datasets/failure_dataset/articulated_object_random/train_val_unseen/'):
+    def __init__(self, subset, root_dir='/project_data/held/yishul/datasets/failure_dataset/articulated_object_random/train_val_unseen/', weighted=False, scale_score=False):
         self.directory = os.path.join(root_dir, subset)
         indices_path = os.path.join(self.directory, 'indices.json')
-        count_path = os.path.join(root_dir, "obj_id_to_weight.json")
+
         with open(indices_path, 'r') as f:
             indices = json.load(f)
 
-        with open(count_path, 'r') as f:
-            obj_id_to_weight = json.load(f)
+        self.obj_id_to_weight = None
+        if weighted:
+            count_path = os.path.join(root_dir, "obj_id_to_weight.json")
+            with open(count_path, 'r') as f:
+                obj_id_to_weight = json.load(f)
+            
+            self.obj_id_to_weight = obj_id_to_weight
 
         # Construct a (history, action_to_evaluate) pair
         self.sample_idx_to_data_idx = indices["data_idx"]
         self.sample_idx_to_action_idx = indices["action_idx"]
-        self.obj_id_to_weight = obj_id_to_weight
+
+        self.sample_idx_to_traj_idx = None
+        if "traj_idx" in indices.keys():
+            self.sample_idx_to_traj_idx = indices["traj_idx"] # If there are multiple trajectories in the pickle file
+
+        self.scale_score = scale_score
 
 
     def __len__(self):
@@ -34,10 +44,12 @@ class ActionDataset(Dataset):
         data_idx = self.sample_idx_to_data_idx[idx]
         with open(os.path.join(self.directory, f'{data_idx}.pkl'), 'rb') as f:
             sample = pkl.load(f)
-        action_idx = self.sample_idx_to_action_idx[idx]
-        # print(data_idx, len(batch_data))
 
-        # print(action_idx, len(sample["evaluate"]["pcds"]))
+        if self.sample_idx_to_traj_idx is not None:
+            traj_idx = self.sample_idx_to_traj_idx[idx]
+            sample = sample[traj_idx]
+        
+        action_idx = self.sample_idx_to_action_idx[idx]
 
         action_to_evaluate_pcd = sample["evaluate"]["pcds"][action_idx]
         action_to_evaluate_flow = sample["evaluate"]["flows"][action_idx]
@@ -47,13 +59,24 @@ class ActionDataset(Dataset):
         if max_gt_score < 0.1:
             max_gt_score = 0.1
         # print(len(sample["evaluate"]["scores"]), action_idx)
-        gt_scores = np.clip(sample["evaluate"]["scores"][action_idx] / max_gt_score, 0, 1) * 2 - 1  # Clipping the negative
 
+        gt_scores = sample["evaluate"]["scores"][action_idx]
+        if self.scale_score:
+            gt_scores = np.clip(gt_scores / max_gt_score, 0, 1) * 2 - 1  # Clipping the negative
+            
+        
         action_pcds = sample["pcds"][:-1]
         action_flows = sample["flows"][:-1]
         action_results = sample["obs_flows"][:-1]
-        action_scores = np.clip(sample["scores"][:-1], 0, 1) * 2 - 1   # bad history: -1, good history: 1
-        weight = self.obj_id_to_weight[sample["obj_id"]]
+
+        action_scores = sample["scores"][:-1]
+        if self.scale_score:
+            action_scores = np.clip(action_scores, 0, 1) * 2 - 1   # bad history: -1, good history: 1
+
+        if self.obj_id_to_weight is not None:
+            weight = self.obj_id_to_weight[sample["obj_id"]]
+        else:
+            weight = 1.0
         # print(f"got data in {time.time() - start_t}!")
         return action_to_evaluate_pcd, action_to_evaluate_flow, action_pcds, action_flows, action_results, gt_scores, action_scores, weight
 

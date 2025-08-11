@@ -34,7 +34,7 @@ data_module_class = {
 training_module_class = FlowTrajectoryDiffusionModule_PNDiT  # PNDiT (Uncond diffusion)
 
 
-@hydra.main(config_path="../configs", config_name="train", version_base="1.3")
+@hydra.main(config_path="../configs", config_name="train_generator", version_base="1.3")
 def main(cfg):
     print(
         json.dumps(
