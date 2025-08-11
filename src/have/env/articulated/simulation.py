@@ -1,3 +1,6 @@
+# TODO: clean and migrate the simulation codes here
+
+
 # Simulation (w/ suction gripper):
 # move the object according to calculated trajectory.
 import os

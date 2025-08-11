@@ -1,5 +1,4 @@
 # Use flash attention & cross attention
-# TODO: merge uneven object verifier code
 from tqdm import tqdm
 import json
 import os

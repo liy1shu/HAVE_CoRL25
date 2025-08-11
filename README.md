@@ -15,6 +15,11 @@ python scripts/train_generator.py
 
 Modify the dataset item in configs/train.yaml to choose different dataset.
 
+### Set up DELTA tracking
+
+submodule in src/have/utils/DELTA
+put the checkpoint in src/have/utils/DELTA/checkpoints
+
 
 ## Generate dataset to train verifier
 

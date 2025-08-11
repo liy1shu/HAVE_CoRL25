@@ -1,5 +1,7 @@
-# TODO: fix
-# TODO: merge uneven object dataset collection code
+# TODO: fix, put the detailed simulation codes in have.env, only keep the general parts here (load generator, verifier, call simulation code, record results etc)
+# TODO: use hydra config
+# TODO: also upload results to wandb
+# TODO: merge uneven object eval code
 import random
 import json
 import os
@@ -7,10 +9,8 @@ from tqdm import tqdm
 import torch
 import torch_geometric.data as tgd
 # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-# from src.scoring_model import TransformerModel  # Original model
-# from src.scoring_model_cross import TransformerModel  # With cross attention
-# from src.scoring_model_qkv import TransformerModel   #With qkv
-from src.scoring_model_qkv_v2 import TransformerModel
+
+from have.verifier.models.ha_verifier import HAVErifier
 from have.generator.metrics.trajectory import flow_metrics
 
 torch.backends.cudnn.deterministic = True
@@ -29,7 +29,7 @@ np.set_printoptions(precision=10)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model = TransformerModel(d_model=128, nhead=4, num_layers=4, dim_feedforward=256, max_len=200)
+model = HAVErifier(d_model=128, nhead=4, num_layers=4, dim_feedforward=256, max_len=200)
 model = model.to(device)
 
 
@@ -68,10 +68,10 @@ sampling_model = sampling_model.to(device)
 
 
 import rpad.partnet_mobility_utils.articulate as pma
-from have.env.articulated.simulation.simulation import *
-from have.env.articulated.simulation.suction import *
-from have.env.articulated.simulation.suction import GTFlowModel, PMSuctionSim
-from tracking.delta_tracker import Tracker
+from have.env.articulated.simulation import *
+from have.env.articulated.suction import *
+from have.env.articulated.suction import GTFlowModel, PMSuctionSim
+from have.utils.tracker import Tracker
 
 
 def point_direction_to_grasp_field(P_world, link_ixs, best_point, best_flow, grasp_selection=False, normalize=False):
@@ -86,7 +86,7 @@ def point_direction_to_grasp_field(P_world, link_ixs, best_point, best_flow, gra
     if grasp_selection:
         coeff = np.exp(-5 * pcd_dist)[:, np.newaxis]
     else:
-        coeff = np.exp(-5 * pcd_dist)[:, np.newaxis]  # TODO: change to -1
+        coeff = np.exp(-5 * pcd_dist)[:, np.newaxis]
     grasp_flow_field = grasp_flow_field * coeff
     grasp_flow_field *= link_ixs[:, np.newaxis]
     return grasp_flow_field
@@ -103,7 +103,7 @@ def flow_to_grasp_field(pred_flow, P_world, link_ixs=None, grasp_selection=False
     if grasp_selection:
         coeff = np.exp(-5 * pcd_dist)[:, np.newaxis]
     else:
-        coeff = np.exp(-5 * pcd_dist)[:, np.newaxis]   # TODO: change to -1 
+        coeff = np.exp(-5 * pcd_dist)[:, np.newaxis] 
     grasp_flow_field = grasp_flow_field * coeff
     if link_ixs is not None:
         grasp_flow_field *= link_ixs[:, np.newaxis]
@@ -116,7 +116,6 @@ def simulation_grasp(obj_id, sampling_model, model, max_step=10, bsz=30, trackin
     if oracle_sampler and oracle_score:
         bsz = 1
 
-    # pm_dir = os.path.expanduser("/home/yishu/failure_recovery/local_workspace/objects")
     if multimodal_door:
         pm_dir = os.path.expanduser("/home/yishu/datasets/failure_history_door/raw")
     else:
@@ -728,5 +727,4 @@ if __name__ == '__main__':
     print(mean_success)
     print(mean_norm_dist)
     print(fail_because_contact)
-    # breakpoint()
 
