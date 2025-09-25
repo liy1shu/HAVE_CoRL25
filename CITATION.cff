@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper as below."
+authors:
+  - family-names: "Li"
+    given-names: "Yishu"
+  - family-names: "Mao"
+    given-names: "Xinyi"
+  - family-names: "Yuan"
+    given-names: "Ying"
+  - family-names: "Sim"
+    given-names: "Kyutae"
+  - family-names: "Eisner"
+    given-names: "Ben"
+  - family-names: "Held"
+    given-names: "Dave"
+title: "Learn from What We HAVE: History-Aware VErifier that Reasons about Past Interactions Online"
+version: 1.0.0
+date-released: 2025-09-20
+url: "https://github.com/liy1shu/HAVE_CoRL25"
+preferred-citation:
+  type: article
+  title: "Learn from What We HAVE: History-Aware VErifier that Reasons about Past Interactions Online"
+  authors:
+  - family-names: "Li"
+    given-names: "Yishu"
+  - family-names: "Mao"
+    given-names: "Xinyi"
+  - family-names: "Yuan"
+    given-names: "Ying"
+  - family-names: "Sim"
+    given-names: "Kyutae"
+  - family-names: "Eisner"
+    given-names: "Ben"
+  - family-names: "Held"
+    given-names: "Dave"
+  journal: "arXiv"
+  year: 2025
+  url: "https://arxiv.org/abs/2509.00271"
+  identifiers:
+    - type: arxiv
+      value: "2509.00271"
