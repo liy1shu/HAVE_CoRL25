@@ -4,6 +4,10 @@ This is the official code repo for CoRL 2025 Paper Learn from What We HAVE.
 
 ## Conda Environment
 
+conda create -n have python=3.9
+pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu121
+pip install -r requirements.txt
+pip install flowbot3d@git+https://github.com/r-pad/flowbot3d.git --no-dependencies
 pip install -e .
 
 ## Overall Pipeline
